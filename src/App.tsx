@@ -14,6 +14,7 @@ import { Toast } from './components/common/Toast';
 import { LoginView } from './components/auth/LoginView';
 import { ForgotPasswordView } from './components/auth/ForgotPasswordView';
 import { RegisterView } from './components/auth/RegisterView';
+import { ChangeTemporaryPasswordModal } from './components/auth/ChangeTemporaryPasswordModal';
 
 // Scholar Views
 import { ScholarDashboard } from './components/scholar/ScholarDashboard';
@@ -36,6 +37,7 @@ import { CoordinatorProfile } from './components/coordinator/CoordinatorProfile'
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AdminUsers } from './components/admin/AdminUsers';
 import { AdminScholars } from './components/admin/AdminScholars';
+import { AdminSettings } from './components/admin/AdminSettings';
 import { AdminProfile } from './components/admin/AdminProfile';
 
 const AppContent: React.FC = () => {
@@ -118,7 +120,7 @@ const AppContent: React.FC = () => {
       break;
     case '#scholars':
       pageTitle = 'Scholar Recipients';
-      breadcrumbs = ['Registry', 'Scholars'];
+      breadcrumbs = ['Admin', 'Scholar Recipients'];
       break;
     case '#profile':
       pageTitle = 'Profile';
@@ -163,6 +165,8 @@ const AppContent: React.FC = () => {
           return <CoordinatorRecords />;
         case '#documents':
           return <CoordinatorDocuments />;
+        case '#settings':
+          return <ScholarSettings />;
         case '#profile':
           return <CoordinatorProfile />;
         default:
@@ -176,6 +180,8 @@ const AppContent: React.FC = () => {
           return <AdminUsers />;
         case '#scholars':
           return <AdminScholars />;
+        case '#settings':
+          return <AdminSettings />;
         case '#profile':
           return <AdminProfile />;
         default:
@@ -201,6 +207,9 @@ const AppContent: React.FC = () => {
           <div className="space-y-7">{renderMainContent()}</div>
         </main>
       </div>
+
+      {/* Temporary Password Change Modal (Shown on First Login) */}
+      <ChangeTemporaryPasswordModal />
 
       {/* Floating FAQ Widget (Fixed bottom-right corner for Scholars) */}
       <FloatingFAQ />

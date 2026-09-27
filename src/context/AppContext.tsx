@@ -16,6 +16,7 @@ import {
   UserStatus,
   ApplicationStatus,
   OfficialScholarRecipient,
+  RegistrationException,
 } from '../types';
 import { INITIAL_DEMO_DATA, DemoDatabase } from '../data/demo-data';
 import {
@@ -53,11 +54,16 @@ interface AppContextType {
   deleteDocument: (docId: string) => void;
   updateUserProfile: (userId: string, updates: Partial<User>) => void;
   updateScholarStatus: (userId: string, status: ScholarshipStatus) => void;
-  registerUser: (userData: Omit<User, 'id' | 'dateRegistered' | 'status'>) => void;
+  registerUser: (
+    userData: Omit<User, 'id' | 'dateRegistered' | 'status'> & { status?: UserStatus }
+  ) => void;
   registerScholar: (
     userData: Omit<User, 'id' | 'userId' | 'dateRegistered' | 'status' | 'role' | 'scholarshipStatus'>
   ) => { success: true; userId: string } | { success: false; reason: 'not_found' | 'exists' };
   replaceOfficialScholarRecipients: (recipients: OfficialScholarRecipient[]) => void;
+  resolveRegistrationException: (id: string, notes?: string) => void;
+  dismissRegistrationException: (id: string) => void;
+  deleteRegistrationException: (id: string) => void;
   approveUserRegistration: (userId: string) => void;
   toggleUserStatus: (userId: string) => void;
   resetUserPassword: (userId: string, newPass?: string) => void;
@@ -84,9 +90,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (parsed.applications?.some((a: Application) => a.id === 'APP-0021' && a.status === 'confirmed')) {
           return {
             ...parsed,
-            officialScholarRecipients: Array.isArray(parsed.officialScholarRecipients)
-              ? parsed.officialScholarRecipients
-              : [],
+            officialScholarRecipients:
+              Array.isArray(parsed.officialScholarRecipients) && parsed.officialScholarRecipients.length > 0
+                ? parsed.officialScholarRecipients
+                : INITIAL_DEMO_DATA.officialScholarRecipients,
+            registrationExceptions:
+              Array.isArray(parsed.registrationExceptions) && parsed.registrationExceptions.length > 0
+                ? parsed.registrationExceptions
+                : INITIAL_DEMO_DATA.registrationExceptions,
           };
         }
       }
@@ -628,15 +639,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   );
 
   const registerUser = useCallback(
-    (userData: Omit<User, 'id' | 'dateRegistered' | 'status'>) => {
+    (userData: Omit<User, 'id' | 'dateRegistered' | 'status'> & { status?: UserStatus }) => {
       const now = new Date().toISOString().split('T')[0];
       const newId = `USR-${String(data.users.length + 1).padStart(4, '0')}`;
       const newUser: User = {
         ...userData,
         id: newId,
-        status: 'pending',
+        status: userData.status || 'active',
         dateRegistered: now,
-        scholarshipStatus: 'Active',
+        scholarshipStatus: userData.scholarshipStatus || 'Active',
       };
 
       setData((prev) => ({
@@ -683,17 +694,72 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       );
 
       if (!recipientExists) {
+        const matchedByName = data.officialScholarRecipients.find(
+          (recipient) => normalize(recipient.scholarName) === normalizedName
+        );
+        const reason = matchedByName ? 'track_mismatch' : 'unmatched_roster';
+        const reasonDescription = matchedByName
+          ? `Scholar selected '${userData.scholarshipProgram}', but official CSV record is under '${matchedByName.scholarshipTrack}'.`
+          : `Applicant name '${userData.name}' was not found in the official provincial recipient list for '${userData.scholarshipProgram}'.`;
+        const suggestedMatch = matchedByName
+          ? `Official track on record: '${matchedByName.scholarshipTrack}'`
+          : undefined;
+
+        const newException: RegistrationException = {
+          id: `EXC-${Date.now()}`,
+          name: userData.name,
+          email: userData.email,
+          contact: userData.contact,
+          scholarshipProgram: userData.scholarshipProgram,
+          collegeProgram: userData.collegeProgram,
+          school: userData.school,
+          attemptedAt: new Date().toISOString(),
+          reason,
+          reasonDescription,
+          suggestedMatch,
+          status: 'pending_review',
+        };
+
+        setData((prev) => ({
+          ...prev,
+          registrationExceptions: [newException, ...(prev.registrationExceptions || [])],
+        }));
+
         return { success: false, reason: 'not_found' };
       }
 
-      const existingAccount = data.users.some(
+      const conflictUser = data.users.find(
         (user) =>
           (user.role === 'scholar' &&
             normalize(user.name) === normalizedName &&
             normalize(user.scholarshipProgram || '') === normalizedTrack) ||
           normalize(user.email) === normalize(userData.email)
       );
-      if (existingAccount) {
+
+      if (conflictUser) {
+        const isEmailConflict = normalize(conflictUser.email) === normalize(userData.email);
+        const newException: RegistrationException = {
+          id: `EXC-${Date.now()}`,
+          name: userData.name,
+          email: userData.email,
+          contact: userData.contact,
+          scholarshipProgram: userData.scholarshipProgram,
+          collegeProgram: userData.collegeProgram,
+          school: userData.school,
+          attemptedAt: new Date().toISOString(),
+          reason: isEmailConflict ? 'duplicate_email' : 'duplicate_account',
+          reasonDescription: isEmailConflict
+            ? `Email '${userData.email}' is already registered to user account ${conflictUser.userId} (${conflictUser.name}).`
+            : `Official recipient '${userData.name}' is already registered with User ID ${conflictUser.userId}.`,
+          suggestedMatch: `Existing account: ${conflictUser.userId} (${conflictUser.email})`,
+          status: 'pending_review',
+        };
+
+        setData((prev) => ({
+          ...prev,
+          registrationExceptions: [newException, ...(prev.registrationExceptions || [])],
+        }));
+
         return { success: false, reason: 'exists' };
       }
 
@@ -722,11 +788,58 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         dateRegistered: new Date().toISOString().split('T')[0],
         scholarshipStatus: 'Active',
       };
-      setData((prev) => ({ ...prev, users: [...prev.users, newUser] }));
+      setData((prev) => ({
+        ...prev,
+        users: [...prev.users, newUser],
+        registrationExceptions: (prev.registrationExceptions || []).map((exc) =>
+          normalize(exc.name) === normalizedName ? { ...exc, status: 'resolved', notes: `Registered as ${userId}` } : exc
+        ),
+      }));
       showToast(`Account created. Your generated User ID is ${userId}.`, 'success');
       return { success: true, userId };
     },
     [data.officialScholarRecipients, data.users, showToast]
+  );
+
+  const resolveRegistrationException = useCallback(
+    (exceptionId: string, notes?: string) => {
+      setData((prev) => ({
+        ...prev,
+        registrationExceptions: (prev.registrationExceptions || []).map((exc) =>
+          exc.id === exceptionId
+            ? { ...exc, status: 'resolved', notes: notes || exc.notes || 'Marked as resolved by Administrator' }
+            : exc
+        ),
+      }));
+      showToast('Registration exception marked as resolved.', 'success');
+    },
+    [showToast]
+  );
+
+  const dismissRegistrationException = useCallback(
+    (exceptionId: string) => {
+      setData((prev) => ({
+        ...prev,
+        registrationExceptions: (prev.registrationExceptions || []).map((exc) =>
+          exc.id === exceptionId ? { ...exc, status: 'dismissed' } : exc
+        ),
+      }));
+      showToast('Registration exception dismissed.', 'info');
+    },
+    [showToast]
+  );
+
+  const deleteRegistrationException = useCallback(
+    (exceptionId: string) => {
+      setData((prev) => ({
+        ...prev,
+        registrationExceptions: (prev.registrationExceptions || []).filter(
+          (exc) => exc.id !== exceptionId
+        ),
+      }));
+      showToast('Registration exception record removed.', 'info');
+    },
+    [showToast]
   );
 
   const approveUserRegistration = useCallback(
@@ -873,6 +986,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         registerUser,
         registerScholar,
         replaceOfficialScholarRecipients,
+        resolveRegistrationException,
+        dismissRegistrationException,
+        deleteRegistrationException,
         approveUserRegistration,
         toggleUserStatus,
         resetUserPassword,

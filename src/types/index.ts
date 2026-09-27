@@ -30,6 +30,7 @@ export interface User {
   profilePicture: string;
   dateRegistered: string;
   scholarshipStatus?: ScholarshipStatus;
+  mustChangePassword?: boolean;
 }
 
 export const SCHOLARSHIP_PROGRAMS = [
@@ -44,6 +45,28 @@ export const SCHOLARSHIP_PROGRAMS = [
 export interface OfficialScholarRecipient {
   scholarName: string;
   scholarshipTrack: string;
+}
+
+export type RegistrationExceptionReason =
+  | 'unmatched_roster'
+  | 'track_mismatch'
+  | 'duplicate_account'
+  | 'duplicate_email';
+
+export interface RegistrationException {
+  id: string;
+  name: string;
+  email: string;
+  contact?: string;
+  scholarshipProgram?: string;
+  collegeProgram?: string;
+  school?: string;
+  attemptedAt: string;
+  reason: RegistrationExceptionReason;
+  reasonDescription: string;
+  suggestedMatch?: string;
+  status: 'pending_review' | 'resolved' | 'dismissed';
+  notes?: string;
 }
 
 export type TaskStatus = 'open' | 'full' | 'completed' | 'closed' | 'draft';

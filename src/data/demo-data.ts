@@ -7,6 +7,7 @@ import {
   FAQItem,
   ActivityLog,
   OfficialScholarRecipient,
+  RegistrationException,
 } from '../types';
 
 export interface DemoDatabase {
@@ -18,10 +19,92 @@ export interface DemoDatabase {
   faq: FAQItem[];
   activities: ActivityLog[];
   officialScholarRecipients: OfficialScholarRecipient[];
+  registrationExceptions: RegistrationException[];
 }
 
 export const INITIAL_DEMO_DATA: DemoDatabase = {
-  officialScholarRecipients: [],
+  officialScholarRecipients: [
+    // Registered Scholars matching user accounts
+    { scholarName: 'Juan Dela Cruz', scholarshipTrack: 'Engineering, Mathematics, and Technology' },
+    { scholarName: 'Maria Clara Santos', scholarshipTrack: 'Engineering, Mathematics, and Technology' },
+    { scholarName: 'Carlos Miguel Ramos', scholarshipTrack: 'Engineering, Mathematics, and Technology' },
+    { scholarName: 'Alynna Joy Valdez', scholarshipTrack: 'Health and Science' },
+    { scholarName: 'Kevin Ray Bautista', scholarshipTrack: 'Engineering, Mathematics, and Technology' },
+    { scholarName: 'Samantha Nicole Castro', scholarshipTrack: 'Accountancy, Business, and Management' },
+    { scholarName: 'Christian Paul Domingo', scholarshipTrack: 'Humanities and Social Sciences' },
+    { scholarName: 'Nicole Anne Morales', scholarshipTrack: 'Health and Science' },
+    { scholarName: 'Gabriel Luis Pascual', scholarshipTrack: 'Agriculture and Fisheries' },
+    { scholarName: 'Hazel Mae Agcaoili', scholarshipTrack: 'Technical-Vocational' },
+
+    // Unregistered Official Recipients (listed in uploaded CSV, haven't completed registration)
+    { scholarName: 'Patricia Mae Flores', scholarshipTrack: 'Health and Science' },
+    { scholarName: 'Joshua Gabriel Castro', scholarshipTrack: 'Engineering, Mathematics, and Technology' },
+    { scholarName: 'Bea Angela Morales', scholarshipTrack: 'Accountancy, Business, and Management' },
+    { scholarName: 'Dominic Rafael Reyes', scholarshipTrack: 'Humanities and Social Sciences' },
+    { scholarName: 'Angelica Rose Mendoza', scholarshipTrack: 'Agriculture and Fisheries' },
+    { scholarName: 'Christian Dave Tolentino', scholarshipTrack: 'Technical-Vocational' },
+    { scholarName: 'Justine Carl Navarro', scholarshipTrack: 'Engineering, Mathematics, and Technology' },
+    { scholarName: 'Kimberly Anne Soriano', scholarshipTrack: 'Health and Science' },
+  ],
+  registrationExceptions: [
+    {
+      id: 'EXC-001',
+      name: 'Mark Anthony Diaz',
+      email: 'mark.diaz@example.com',
+      contact: '0921-987-6543',
+      scholarshipProgram: 'Health and Science',
+      collegeProgram: 'BS Medical Technology',
+      school: 'Mariano Marcos State University',
+      attemptedAt: '2026-09-26T14:32:00.000Z',
+      reason: 'unmatched_roster',
+      reasonDescription: "Name 'Mark Anthony Diaz' was not found on the official provincial recipient list for Health and Science.",
+      suggestedMatch: 'No matching grant recipient record found in the 2026-2027 CSV roster.',
+      status: 'pending_review',
+    },
+    {
+      id: 'EXC-002',
+      name: 'Bea Angela Morales',
+      email: 'bea.morales@example.com',
+      contact: '0917-888-1234',
+      scholarshipProgram: 'Humanities and Social Sciences',
+      collegeProgram: 'BA Communication',
+      school: 'University of Ilocos Norte',
+      attemptedAt: '2026-09-26T16:15:00.000Z',
+      reason: 'track_mismatch',
+      reasonDescription: "Candidate name exists in official CSV roster under 'Accountancy, Business, and Management', but registration selected 'Humanities and Social Sciences'.",
+      suggestedMatch: "Official track on record: 'Accountancy, Business, and Management'",
+      status: 'pending_review',
+    },
+    {
+      id: 'EXC-003',
+      name: 'Kevin Ray Bautista',
+      email: 'kevin.bautista.alt@example.com',
+      contact: '0922-333-4455',
+      scholarshipProgram: 'Engineering, Mathematics, and Technology',
+      collegeProgram: 'BS Civil Engineering',
+      school: 'Northwestern University',
+      attemptedAt: '2026-09-25T11:08:00.000Z',
+      reason: 'duplicate_account',
+      reasonDescription: "Official recipient 'Kevin Ray Bautista' is already registered with User ID SCH-00005 (kevin.bautista@example.com).",
+      suggestedMatch: 'Existing active user account: SCH-00005',
+      status: 'pending_review',
+    },
+    {
+      id: 'EXC-004',
+      name: 'Reymart John Duldulao',
+      email: 'reymart.duldulao@example.com',
+      contact: '0919-444-7788',
+      scholarshipProgram: 'Agriculture and Fisheries',
+      collegeProgram: 'BS Agriculture',
+      school: 'MMSU Batac Campus',
+      attemptedAt: '2026-09-24T09:40:00.000Z',
+      reason: 'unmatched_roster',
+      reasonDescription: "Applicant entered name 'Reymart John Duldulao', which does not match official enrolled roster.",
+      suggestedMatch: 'Verified by MISO: Scholar grant under endorsement review by INYDO Secretariat.',
+      status: 'resolved',
+      notes: 'Advised scholar to visit INYDO desk with valid enrollment certificate.',
+    },
+  ],
   users: [
     {
       id: 'USR-0001',

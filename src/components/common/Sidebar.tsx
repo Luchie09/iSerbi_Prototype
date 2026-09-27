@@ -13,6 +13,8 @@ import {
   ShieldCheck,
   X,
   Sparkles,
+  Settings,
+  GraduationCap,
 } from 'lucide-react';
 
 interface SidebarItem {
@@ -48,6 +50,11 @@ export const Sidebar: React.FC = () => {
 
   // Pending user registrations count for admin badge
   const pendingUsersCount = data.users.filter((u) => u.status === 'pending').length;
+
+  // Pending registration exceptions count for admin badge
+  const pendingExceptionsCount = (data.registrationExceptions || []).filter(
+    (e) => e.status === 'pending_review'
+  ).length;
 
   // Active tasks count
   const openTasksCount = data.tasks.filter((t) => t.status === 'open').length;
@@ -127,26 +134,32 @@ export const Sidebar: React.FC = () => {
       },
     ];
   } else if (currentUser.role === 'admin') {
-    // Admin order: Dashboard -> User Management -> Scholar Recipients -> Profile (last)
+    // Admin order: Dashboard -> User Management -> Scholar Recipients -> Settings
     navItems = [
       {
         id: 'dashboard',
         label: 'Dashboard',
         route: '#dashboard',
         icon: LayoutDashboard,
+        badgeCount: pendingExceptionsCount > 0 ? pendingExceptionsCount : undefined,
       },
       {
         id: 'users',
         label: 'User Management',
         route: '#users',
         icon: Users,
-        badgeCount: pendingUsersCount > 0 ? pendingUsersCount : undefined,
       },
       {
         id: 'scholars',
         label: 'Scholar Recipients',
         route: '#scholars',
         icon: Award,
+      },
+      {
+        id: 'settings',
+        label: 'Settings',
+        route: '#settings',
+        icon: Settings,
       },
     ];
   }

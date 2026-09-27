@@ -240,6 +240,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const task = data.tasks.find((t) => t.id === taskId);
       if (!task) return false;
 
+      const normalizedStatus = task.status === 'completed' ? 'finished' : task.status;
+      if (normalizedStatus === 'closed') {
+        showToast('This task is closed. Applications are no longer being accepted.', 'info');
+        return false;
+      }
+
+      if (task.deadline) {
+        const deadlineTime = new Date(task.deadline).getTime();
+        if (!isNaN(deadlineTime) && deadlineTime <= Date.now()) {
+          showToast('The application deadline for this task has passed.', 'info');
+          return false;
+        }
+      }
+
       // Check if already applied
       const existing = data.applications.find(
         (a) => a.taskId === taskId && a.scholarId === currentUser.id && a.status !== 'rejected'
@@ -266,7 +280,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         hoursCredited: null,
       };
 
-      // Add application and increment filled slots
+      // Add application and increment filled slots while keeping the task Open under FIFO rules
       setData((prev) => ({
         ...prev,
         applications: [...prev.applications, newApplication],
@@ -275,7 +289,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             ? {
                 ...t,
                 slotsFilled: t.slotsFilled + 1,
-                status: t.slotsFilled + 1 >= t.slotsTotal ? 'full' : t.status,
               }
             : t
         ),
@@ -317,6 +330,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const task = data.tasks.find((t) => t.id === app.taskId);
       const taskTitle = task?.title || 'Task Opportunity';
 
+      const normalizedStatus = task?.status === 'completed' ? 'finished' : task?.status;
+      if (normalizedStatus === 'closed') {
+        showToast(`Applications for "${taskTitle}" are closed and cannot be cancelled.`, 'info');
+        return;
+      }
+
+      if (task?.deadline) {
+        const deadlineTime = new Date(task.deadline).getTime();
+        if (!isNaN(deadlineTime) && deadlineTime <= Date.now()) {
+          showToast(`Applications for "${taskTitle}" are closed and cannot be cancelled.`, 'info');
+          return;
+        }
+      }
+
       setData((prev) => ({
         ...prev,
         applications: prev.applications.filter((a) => a.id !== applicationId),
@@ -325,7 +352,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             ? {
                 ...t,
                 slotsFilled: Math.max(0, t.slotsFilled - 1),
-                status: t.status === 'full' ? 'open' : t.status,
               }
             : t
         ),
@@ -353,6 +379,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const app = prev.applications.find((a) => a.id === applicationId);
         const task = app ? prev.tasks.find((t) => t.id === app.taskId) : null;
         const scholar = app ? prev.users.find((u) => u.id === app.scholarId) : null;
+        const priorHistory = Array.isArray(app?.submissionHistory) ? app.submissionHistory : [];
+        const nextAction: 'Submitted' | 'Edited' | 'Resubmitted' =
+          priorHistory.length === 0 ? 'Submitted' : app?.status === 'rejected' ? 'Resubmitted' : 'Edited';
 
         const updatedApps = prev.applications.map((a) =>
           a.id === applicationId
@@ -363,6 +392,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 evidenceNotes: notes,
                 submittedAt: now,
                 rejectionReason: null, // Clear any previous rejection
+                submissionHistory: [...priorHistory, { action: nextAction, timestamp: now }],
               }
             : a
         );

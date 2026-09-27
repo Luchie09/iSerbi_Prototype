@@ -71,7 +71,7 @@ export interface RegistrationException {
   notes?: string;
 }
 
-export type TaskStatus = 'open' | 'closed' | 'full' | 'finished' | 'draft' | 'completed';
+export type TaskStatus = 'open' | 'closed' | 'finished' | 'draft' | 'completed';
 
 export interface Task {
   id: string;
@@ -101,6 +101,13 @@ export type ApplicationStatus =
   | 'hours_reflected'
   | 'rejected';
 
+export type SubmissionAction = 'Submitted' | 'Edited' | 'Resubmitted';
+
+export interface SubmissionEvent {
+  action: SubmissionAction;
+  timestamp: string;
+}
+
 export const APPLICATION_STATUSES: ApplicationStatus[] = [
   'applied',
   'confirmed',
@@ -122,6 +129,7 @@ export interface Application {
   verifiedBy: string | null;
   hoursCredited: number | null;
   submittedAt?: string | null;
+  submissionHistory?: SubmissionEvent[];
 }
 
 export type DocumentCategory = 'renewal' | 'guideline' | 'policy';

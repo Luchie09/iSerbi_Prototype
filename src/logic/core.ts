@@ -226,6 +226,23 @@ export function formatDateTime(isoString?: string | null): string {
   }
 }
 
+export function getSubmissionHistory(
+  app?: { submittedAt?: string | null; submissionHistory?: { action: 'Submitted' | 'Edited' | 'Resubmitted'; timestamp: string }[] } | null
+): { action: 'Submitted' | 'Edited' | 'Resubmitted'; timestamp: string }[] {
+  if (!app) return [];
+
+  const history = Array.isArray(app.submissionHistory) ? app.submissionHistory : [];
+  if (history.length > 0) {
+    return [...history].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  }
+
+  if (app.submittedAt) {
+    return [{ action: 'Submitted', timestamp: app.submittedAt }];
+  }
+
+  return [];
+}
+
 export function formatDateOnly(dateString?: string | null): string {
   if (!dateString) return '—';
   try {
@@ -277,21 +294,23 @@ export function exportToCSV(
   document.body.removeChild(link);
 }
 
-export type TaskCategory = 'open' | 'closed' | 'full' | 'finished' | 'draft';
+export type TaskCategory = 'open' | 'closed' | 'finished' | 'draft';
 
 /**
  * Determines the normalized category/status of a task:
  * - 'draft': Created but not yet published (coordinator-only)
  * - 'finished': Task itself has already been completed/conducted
- * - 'closed': Application deadline has passed or applications no longer accepted
- * - 'full': Maximum slots filled
- * - 'open': Application period is active, scholars can apply
+ * - 'closed': Deadline has passed; no further applications accepted
+ * - 'open': Application period is active; queue remains open even when slots are filled
+ *
+ * Legacy task entries that still use a 'full' status are treated as Open so the FIFO queue
+ * model remains consistent with the updated business rules.
  */
 export function getTaskCategory(task: Task): TaskCategory {
   if (task.status === 'draft') return 'draft';
   if (task.status === 'finished' || (task.status as string) === 'completed') return 'finished';
   if (task.status === 'closed') return 'closed';
-  if (task.status === 'full' || task.slotsFilled >= task.slotsTotal) return 'full';
+  if ((task.status as string) === 'full') return 'open';
 
   if (task.deadline) {
     const deadlineTime = new Date(task.deadline).getTime();

@@ -111,7 +111,7 @@ export const CoordinatorDocuments: React.FC = () => {
       {/* Search Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          <Search className="pointer-events-none w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
@@ -133,7 +133,6 @@ export const CoordinatorDocuments: React.FC = () => {
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
                 <th className="py-3 px-4">File Name & Description</th>
                 <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Uploaded By</th>
                 <th className="py-3 px-4">Date Uploaded</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
@@ -162,7 +161,6 @@ export const CoordinatorDocuments: React.FC = () => {
                       {doc.category}
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-slate-600">{doc.uploadedBy}</td>
                   <td className="py-3.5 px-4 font-mono text-slate-600 tabular-nums">
                     {formatDateOnly(doc.uploadedAt)}
                   </td>

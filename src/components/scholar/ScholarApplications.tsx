@@ -173,114 +173,141 @@ export const ScholarApplications: React.FC = () => {
             return (
               <div
                 key={app.id}
-                className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs hover:border-slate-300 transition-all flex flex-col md:flex-row md:items-center justify-between gap-5"
+                className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs hover:border-slate-300 transition-all"
               >
-                {/* Left: Task Information & Status */}
-                <div className="space-y-2 flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge
-                      status={app.status}
-                      label={app.status === 'confirmed' ? 'For Submission' : undefined}
-                    />
-                    <span className="text-xs font-mono font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">
-                      {isApproved
-                        ? `${app.hoursCredited ?? task.creditHours} Hours Credited`
-                        : `${task.creditHours} Hours Expected`}
-                    </span>
-                            <span className="text-[11px] font-mono text-slate-500">
-                      Queue Position: #{queueInfo.position} (of {queueInfo.totalInQueue})
-                    </span>
-                  </div>
-
-                  <h3 className="text-sm md:text-base font-bold text-slate-900 leading-snug">
-                    {task.title}
-                  </h3>
-                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                    {task.shortDescription}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-1">
-                    <span className="flex items-center gap-1 font-mono text-[11px]">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                      Applied: {formatDateTime(app.appliedAt)}
-                    </span>
-                    <span className="flex items-center gap-1 truncate max-w-xs">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{task.location}</span>
-                    </span>
-                  </div>
-
-                  {/* Submission Info / Rejection Banner */}
-                  {(app.status === 'proof_submitted' || app.status === 'confirmed' || app.status === 'rejected') && (
-                    <div className="mt-2 p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg text-xs text-amber-900">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <FileText className="w-4 h-4 text-amber-600 shrink-0" />
-                          <span className="font-semibold uppercase tracking-wide text-[10px] text-amber-800">
-                            {app.status === 'rejected'
-                              ? 'Resubmission Requirement'
-                              : 'Submission Requirement'}
-                          </span>
-                        </div>
-                        {app.status === 'proof_submitted' && (
-                          <span className="text-[10px] text-amber-700 font-mono shrink-0">
-                            Submitted: {formatDateTime(app.submittedAt)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-1.5 flex items-start justify-between gap-3">
-                        <p className="text-slate-700 leading-relaxed flex-1">
-                          {task.requirements || 'Upload the required signed attendance sheet or certificate for this duty.'}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedAppForEvidence({ application: app, task })}
-                          className={`px-3 py-1.5 text-[10px] font-bold rounded-md transition-colors shrink-0 shadow-xs ${
-                            app.status === 'rejected' || app.status === 'confirmed'
-                              ? 'text-white bg-[#d92d20] hover:bg-[#b42318]'
-                              : 'text-amber-800 bg-white border border-amber-200 hover:bg-amber-100'
-                          }`}
-                        >
-                          {app.status === 'rejected'
-                            ? 'Resubmit Proof'
-                            : app.status === 'confirmed'
-                              ? 'Submit'
-                              : 'Edit Submission'}
-                        </button>
-                      </div>
-                      {app.evidenceFile && (
-                        <div className="mt-2 text-[11px] text-amber-800 font-medium">
-                          Evidence file: {app.evidenceFile}
-                        </div>
-                      )}
+                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusBadge
+                        status={app.status}
+                        label={app.status === 'confirmed' ? 'For Submission' : undefined}
+                      />
+                      <span className="text-xs font-mono font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                        {isApproved
+                          ? `${app.hoursCredited ?? task.creditHours} Hours Credited`
+                          : `${task.creditHours} Hours Expected`}
+                      </span>
                     </div>
-                  )}
 
-                  {app.status === 'rejected' && app.rejectionReason && (
-                    <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-900">
-                      <div className="flex items-center gap-1.5 font-bold">
-                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                        <span>Action Required: Coordinator Returned Submission</span>
-                      </div>
-                      <p className="mt-1.5 text-red-800 leading-relaxed">
-                        {app.rejectionReason}
+                    <div>
+                      <h3 className="text-sm md:text-base font-bold text-slate-900 leading-snug">
+                        {task.title}
+                      </h3>
+                      <p className="mt-1 text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                        {task.shortDescription}
                       </p>
                     </div>
-                  )}
 
-                  {isApproved && (
-                    <div className="mt-2 p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-lg text-xs text-emerald-900 flex items-center justify-between">
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <div className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Applied</div>
+                        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-700 font-mono">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          {formatDateTime(app.appliedAt)}
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <div className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Location</div>
+                        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-700">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{task.location}</span>
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <div className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Queue</div>
+                        <div className="mt-1 text-[11px] font-mono text-slate-700">
+                          #{queueInfo.position} of {queueInfo.totalInQueue}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {(app.status === 'proof_submitted' || app.status === 'confirmed' || app.status === 'rejected') && (
+                  <div className="mt-4 pt-4 border-t border-slate-200">
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                      <div className="min-w-0 flex-1 text-xs text-slate-600">
+                        {app.status === 'confirmed' && (
+                          <>
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                              <FileText className="w-3.5 h-3.5 text-slate-400" />
+                              Submission detail
+                            </div>
+                            <p className="mt-1 leading-relaxed text-slate-700">
+                              {task.requirements || 'Upload the required signed attendance sheet or certificate for this duty.'}
+                            </p>
+                            {task.deadline && (
+                              <p className="mt-1 text-[11px] text-slate-600 font-medium">
+                                Due by {formatDateTime(task.deadline)}
+                              </p>
+                            )}
+                          </>
+                        )}
+
+                        {app.status === 'proof_submitted' && (
+                          <>
+                            <div className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                              Last submitted
+                            </div>
+                            <p className="mt-1 font-mono text-[11px] text-slate-700">
+                              {formatDateTime(app.submittedAt || app.appliedAt)}
+                            </p>
+                          </>
+                        )}
+
+                        {app.status === 'rejected' && app.rejectionReason && (
+                          <>
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-red-700">
+                              <AlertCircle className="w-3.5 h-3.5 text-red-600" />
+                              Rejection reason
+                            </div>
+                            <p className="mt-1 leading-relaxed text-red-800">{app.rejectionReason}</p>
+                          </>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAppForEvidence({ application: app, task })}
+                        className={`shrink-0 px-3 py-2 text-[10px] font-bold rounded-md transition-colors shadow-xs ${
+                          app.status === 'rejected'
+                            ? 'text-white bg-[#d92d20] hover:bg-[#b42318]'
+                            : app.status === 'confirmed'
+                              ? 'text-white bg-[#d92d20] hover:bg-[#b42318]'
+                              : 'text-amber-800 bg-white border border-amber-200 hover:bg-amber-100'
+                        }`}
+                      >
+                        {app.status === 'rejected'
+                          ? 'Resubmit'
+                          : app.status === 'confirmed'
+                            ? 'Submit'
+                            : 'Edit Submission'}
+                      </button>
+                    </div>
+
+                    {app.evidenceFile && (
+                      <div className="mt-3 text-[11px] text-amber-800 font-medium">
+                        Evidence file: {app.evidenceFile}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {isApproved && (
+                  <div className="mt-4 pt-4 border-t border-slate-200">
+                    <div className="flex items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">
                       <div className="flex items-center gap-1.5 font-semibold">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        <span>Verified & Reflected in Semester Ledger</span>
+                        <span>Verified</span>
                       </div>
                       <span className="text-[10px] text-emerald-700 font-mono">
                         {formatDateTime(app.verifiedAt)}
                       </span>
                     </div>
-                  )}
-                </div>
-
+                  </div>
+                )}
               </div>
             );
           })}

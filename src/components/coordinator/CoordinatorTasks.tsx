@@ -17,18 +17,16 @@ import {
   Send,
   Save,
   CheckCircle,
-  ChevronDown,
-  ChevronUp,
   AlertTriangle,
 } from 'lucide-react';
 
 export const CoordinatorTasks: React.FC = () => {
   const { data, createTask, updateTask, deleteTask, showToast } = useApp();
 
-  const [activeFilter, setActiveFilter] = useState<'all' | 'open' | 'closed' | 'full' | 'finished' | 'draft'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'open' | 'closed' | 'finished' | 'draft'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [selectedTaskForRoster, setSelectedTaskForRoster] = useState<Task | null>(null);
+  const [selectedTaskForSpec, setSelectedTaskForSpec] = useState<Task | null>(null);
 
   // Delete Confirmation Modal State
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
@@ -52,10 +50,6 @@ export const CoordinatorTasks: React.FC = () => {
     semester: '1st Semester 2026-2027',
     status: 'open' as TaskStatus,
   });
-
-  const toggleExpand = (taskId: string) => {
-    setExpandedTaskId((prev) => (prev === taskId ? null : taskId));
-  };
 
   const handleOpenCreateModal = () => {
     setEditingTask(null);
@@ -153,7 +147,7 @@ export const CoordinatorTasks: React.FC = () => {
     setTaskToDelete(null);
   };
 
-  // Filter tasks based on normalized categories: Open, Closed, Full, Finished, Draft
+  // Filter tasks based on normalized categories: Open, Closed, Finished, Draft
   const filteredTasks = data.tasks.filter((task) => {
     const category = getTaskCategory(task);
     if (activeFilter !== 'all' && category !== activeFilter) {
@@ -196,7 +190,7 @@ export const CoordinatorTasks: React.FC = () => {
         {/* Filter Bar & Search */}
         <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-slate-100">
           <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg overflow-x-auto">
-            {(['all', 'open', 'closed', 'full', 'finished', 'draft'] as const).map((filter) => {
+            {(['all', 'open', 'closed', 'finished', 'draft'] as const).map((filter) => {
               const count =
                 filter === 'all'
                   ? data.tasks.length
@@ -244,7 +238,6 @@ export const CoordinatorTasks: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredTasks.map((task) => {
-            const isExpanded = expandedTaskId === task.id;
             const category = getTaskCategory(task);
 
             return (
@@ -266,8 +259,6 @@ export const CoordinatorTasks: React.FC = () => {
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                             : category === 'closed'
                             ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                            : category === 'full'
-                            ? 'bg-purple-50 text-purple-700 border border-purple-200'
                             : category === 'finished'
                             ? 'bg-blue-50 text-blue-700 border border-blue-200'
                             : 'bg-slate-100 text-slate-700 border border-slate-300'
@@ -316,7 +307,7 @@ export const CoordinatorTasks: React.FC = () => {
                       <span className="text-[11px]">
                         Deadline:{' '}
                         <span className="font-mono font-medium text-slate-700">
-                          {task.deadline ? formatDateTime(task.deadline) : 'Rolling admission'}
+                          {task.deadline ? formatDateTime(task.deadline) : 'No deadline set'}
                         </span>
                       </span>
                     </div>
@@ -337,52 +328,16 @@ export const CoordinatorTasks: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Expanded Details Section */}
-                  {isExpanded && (
-                    <div className="mt-4 pt-3 border-t border-slate-100 space-y-3 text-xs animate-in fade-in duration-150">
-                      <div>
-                        <span className="font-semibold text-slate-700 block mb-0.5">
-                          Full Scope of Service:
-                        </span>
-                        <p className="text-slate-600 leading-relaxed">{task.description}</p>
-                      </div>
-
-                      <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
-                        <span className="font-semibold text-slate-700 block mb-0.5">
-                          Requirements & Attire:
-                        </span>
-                        <p className="text-slate-600 text-[11px] leading-relaxed">
-                          {task.requirements}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[11px] text-slate-600 py-1 border-t border-slate-100">
-                        <span>Deadline:</span>
-                        <span className="font-mono font-semibold text-slate-800">
-                          {task.deadline ? formatDateTime(task.deadline) : 'Rolling admission'}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-end text-[11px] text-slate-400 font-mono">
-                        <span>{task.semester}</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
-                {/* Card Bottom: View Full Detail toggle on left, Edit & Delete on right */}
+                {/* Card Bottom: Full Task Specification link on left, Edit & Delete on right */}
                 <div className="p-4 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between gap-3">
                   <button
                     type="button"
-                    onClick={() => toggleExpand(task.id)}
-                    className="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1"
+                    onClick={() => setSelectedTaskForSpec(task)}
+                    className="inline-flex items-center text-[11px] font-semibold text-red-600 hover:text-red-700 hover:underline"
                   >
-                    <span>{isExpanded ? 'Less info' : 'View Full Detail'}</span>
-                    {isExpanded ? (
-                      <ChevronUp className="w-3.5 h-3.5" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    )}
+                    Full Task Specification
                   </button>
 
                   {/* Coordinators see Edit and Delete actions in the equivalent position */}
@@ -410,6 +365,89 @@ export const CoordinatorTasks: React.FC = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Full Task Specification Modal */}
+      {selectedTaskForSpec && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 tracking-tight">Full Task Specification</h3>
+                <p className="text-xs text-slate-500 mt-0.5">{selectedTaskForSpec.title}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedTaskForSpec(null)}
+                className="p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
+              <div className="p-4 bg-red-50 border border-red-100 rounded-xl">
+                <div className="text-[10px] font-bold uppercase tracking-wide text-red-600 mb-1">Title</div>
+                <div className="text-sm font-bold text-slate-900">{selectedTaskForSpec.title}</div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Hours Credit</div>
+                  <div className="font-mono text-sm font-bold text-slate-800 mt-1">{selectedTaskForSpec.creditHours} hrs</div>
+                </div>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Capacity</div>
+                  <div className="font-mono text-sm font-bold text-slate-800 mt-1">{selectedTaskForSpec.slotsFilled}/{selectedTaskForSpec.slotsTotal} filled</div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Service Description</div>
+                <p className="text-slate-600 leading-relaxed">{selectedTaskForSpec.description}</p>
+              </div>
+
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Requirements & Attire</div>
+                <p className="text-slate-600 leading-relaxed">{selectedTaskForSpec.requirements}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Date</div>
+                  <div className="font-mono text-xs text-slate-700 mt-1">
+                    {formatDateOnly(selectedTaskForSpec.dateStart)}
+                    {selectedTaskForSpec.dateEnd !== selectedTaskForSpec.dateStart ? ` — ${formatDateOnly(selectedTaskForSpec.dateEnd)}` : ''}
+                  </div>
+                </div>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Deadline</div>
+                  <div className="font-mono text-xs text-slate-700 mt-1">
+                    {selectedTaskForSpec.deadline ? formatDateTime(selectedTaskForSpec.deadline) : 'No deadline set'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Venue</div>
+                <div className="flex items-center gap-2 text-slate-700 mt-1">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{selectedTaskForSpec.location}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedTaskForSpec(null)}
+                className="px-4 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -603,9 +641,8 @@ export const CoordinatorTasks: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as TaskStatus })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
                 >
-                  <option value="open">Open (Application period is active, scholars can apply)</option>
-                  <option value="closed">Closed (Application deadline passed, no longer accepting applications)</option>
-                  <option value="full">Full (Task has reached maximum approved/accepted applicants)</option>
+                  <option value="open">Open (Application period is active; scholars may still queue behind the FIFO waitlist)</option>
+                  <option value="closed">Closed (Deadline passed; no further applications accepted and the queue is finalized)</option>
                   <option value="finished">Finished (Task itself has already been completed/conducted)</option>
                   <option value="draft">Draft (Unpublished, coordinator-only draft)</option>
                 </select>

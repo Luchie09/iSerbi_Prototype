@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Task } from '../../types';
-import { getQueuePosition, formatDateOnly, formatDateTime } from '../../logic/core';
+import { getQueuePosition, formatDateOnly, formatDateTime, getTaskCategory, TaskCategory } from '../../logic/core';
 import { ApplicantsModal } from '../common/ApplicantsModal';
 import {
   Search,
@@ -17,21 +17,24 @@ import {
 } from 'lucide-react';
 
 export const ScholarTasks: React.FC = () => {
-  const { currentUser, data, applyForTask } = useApp();
+  const { currentUser, data, applyForTask, cancelApplication } = useApp();
 
-  const [activeFilter, setActiveFilter] = useState<'all' | 'open' | 'full' | 'completed'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'open' | 'closed' | 'full' | 'finished'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [selectedTaskForRoster, setSelectedTaskForRoster] = useState<Task | null>(null);
 
   if (!currentUser) return null;
 
-  // Exclude draft tasks from scholar view as specified in Section 8.2
+  // Exclude draft tasks from scholar view as specified:
+  // Draft tasks are only visible on coordinator side
   const visibleTasks = data.tasks.filter((t) => t.status !== 'draft');
 
   const filteredTasks = visibleTasks.filter((task) => {
-    // Status filter
-    if (activeFilter !== 'all' && task.status !== activeFilter) {
+    const category = getTaskCategory(task);
+
+    // Status category filter
+    if (activeFilter !== 'all' && category !== activeFilter) {
       return false;
     }
 
@@ -71,13 +74,13 @@ export const ScholarTasks: React.FC = () => {
 
         {/* Filter Bar & Search */}
         <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-slate-100">
-          {/* Segmented Filter Controls */}
+          {/* Segmented Filter Controls: Open, Closed, Full, Finished */}
           <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg overflow-x-auto">
-            {(['all', 'open', 'full', 'completed'] as const).map((filter) => {
+            {(['all', 'open', 'closed', 'full', 'finished'] as const).map((filter) => {
               const count =
                 filter === 'all'
                   ? visibleTasks.length
-                  : visibleTasks.filter((t) => t.status === filter).length;
+                  : visibleTasks.filter((t) => getTaskCategory(t) === filter).length;
 
               return (
                 <button
@@ -116,13 +119,14 @@ export const ScholarTasks: React.FC = () => {
           <Calendar className="w-10 h-10 mx-auto text-slate-300 mb-2" />
           <h3 className="text-sm font-bold text-slate-700">No Task Opportunities Found</h3>
           <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-            Try adjusting your search keywords or switching filters to see past and closed opportunities.
+            Try adjusting your search keywords or switching filters to see open, closed, full, or finished opportunities.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredTasks.map((task) => {
             const isExpanded = expandedTaskId === task.id;
+            const category = getTaskCategory(task);
 
             const taskApplications = data.applications
               .filter((a) => a.taskId === task.id)
@@ -138,9 +142,6 @@ export const ScholarTasks: React.FC = () => {
               ? getQueuePosition(userApplication.id, data.applications)
               : null;
 
-            const earliestQueueTimestamp = taskApplications[0]?.appliedAt ?? null;
-            const isFull = task.slotsFilled >= task.slotsTotal;
-
             return (
               <div
                 key={task.id}
@@ -149,9 +150,25 @@ export const ScholarTasks: React.FC = () => {
                 {/* Card Top: Header & Badges */}
                 <div className="p-5">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="px-2 py-0.5 text-xs font-mono font-bold bg-red-50 text-red-700 border border-red-200 rounded">
-                      {task.creditHours} Hours Credit
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 text-xs font-mono font-bold bg-red-50 text-red-700 border border-red-200 rounded">
+                        {task.creditHours} Hours Credit
+                      </span>
+                      {/* Consistent Status Badge */}
+                      <span
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded uppercase ${
+                          category === 'open'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : category === 'closed'
+                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                            : category === 'full'
+                            ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                            : 'bg-blue-50 text-blue-700 border border-blue-200'
+                        }`}
+                      >
+                        {category}
+                      </span>
+                    </div>
 
                     {/* Applicant Count Pill with click to open roster */}
                     <button
@@ -178,16 +195,25 @@ export const ScholarTasks: React.FC = () => {
                     {task.shortDescription}
                   </p>
 
-                  {/* Date & Location */}
+                  {/* Date, Location, and Application Deadline (minimal & clean in metadata row) */}
                   <div className="mt-4 space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 text-slate-600">
                       <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span className="font-mono text-[11px]">
                         {formatDateOnly(task.dateStart)}{' '}
                         {task.dateEnd !== task.dateStart ? `— ${formatDateOnly(task.dateEnd)}` : ''}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 truncate">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="text-[11px]">
+                        Deadline:{' '}
+                        <span className="font-mono font-medium text-slate-700">
+                          {task.deadline ? formatDateTime(task.deadline) : 'Rolling admission'}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-600 truncate">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span className="truncate">{task.location}</span>
                     </div>
@@ -222,6 +248,13 @@ export const ScholarTasks: React.FC = () => {
                         </p>
                       </div>
 
+                      <div className="flex items-center justify-between text-[11px] text-slate-600 py-1 border-t border-slate-100">
+                        <span>Deadline:</span>
+                        <span className="font-mono font-semibold text-slate-800">
+                          {task.deadline ? formatDateTime(task.deadline) : 'Rolling admission'}
+                        </span>
+                      </div>
+
                       <div className="flex items-center justify-end text-[11px] text-slate-400 font-mono">
                         <span>{task.semester}</span>
                       </div>
@@ -229,7 +262,7 @@ export const ScholarTasks: React.FC = () => {
                   )}
                 </div>
 
-                {/* Card Bottom: Expand Toggle & Apply / Queue Status Button */}
+                {/* Card Bottom: Expand Toggle & Apply / Cancel / Queue Status Button */}
                 <div className="p-4 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between gap-3">
                   <button
                     type="button"
@@ -244,15 +277,27 @@ export const ScholarTasks: React.FC = () => {
                     )}
                   </button>
 
-                  {/* Apply or Applied Status Button */}
+                  {/* Apply or Applied / Cancel Status Buttons */}
                   {userApplication ? (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs font-bold font-mono">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>
-                        Applied · Queue #{queueInfo?.position ?? '—'}
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs font-bold font-mono">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>
+                          Applied · #{queueInfo?.position ?? '—'}
+                        </span>
+                      </div>
+                      {category !== 'finished' && (
+                        <button
+                          type="button"
+                          onClick={() => cancelApplication(userApplication.id)}
+                          className="px-3 py-1.5 text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                          title="Cancel this application"
+                        >
+                          Cancel
+                        </button>
+                      )}
                     </div>
-                  ) : task.status === 'open' && !isFull ? (
+                  ) : category === 'open' ? (
                     <button
                       type="button"
                       onClick={() => applyForTask(task.id)}
@@ -260,9 +305,17 @@ export const ScholarTasks: React.FC = () => {
                     >
                       <span>Apply (Queue)</span>
                     </button>
+                  ) : category === 'closed' ? (
+                    <span className="px-3 py-1.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg text-xs font-bold font-mono">
+                      Application Closed
+                    </span>
+                  ) : category === 'full' ? (
+                    <span className="px-3 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-xs font-bold font-mono">
+                      Slots Full
+                    </span>
                   ) : (
-                    <span className="px-3 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold uppercase tracking-wider">
-                      {isFull ? 'Capacity Full' : task.status}
+                    <span className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold font-mono">
+                      Task Finished
                     </span>
                   )}
                 </div>
@@ -282,3 +335,4 @@ export const ScholarTasks: React.FC = () => {
     </div>
   );
 };
+

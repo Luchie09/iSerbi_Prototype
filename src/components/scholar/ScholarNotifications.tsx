@@ -57,7 +57,9 @@ export const ScholarNotifications: React.FC = () => {
             )}
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Real-time status updates, reminders, and verification alerts regarding your community service.
+            {currentUser.role === 'scholar'
+              ? 'Real-time status updates, reminders, and verification alerts regarding your community service.'
+              : 'Real-time workflow alerts, pending review queues, and system activity notices.'}
           </p>
         </div>
 

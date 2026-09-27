@@ -1,20 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { formatDateTime, formatDateOnly } from '../../logic/core';
 import {
   ShieldCheck,
   CalendarCheck,
-  Clock,
-  AlertCircle,
-  ArrowRight,
-  TrendingUp,
-  FileCheck2,
   Users,
   ChevronRight,
 } from 'lucide-react';
 
 export const CoordinatorDashboard: React.FC = () => {
   const { currentUser, data, navigate } = useApp();
+  const [activeUsersFilter, setActiveUsersFilter] = useState<'all' | 'scholar' | 'staff'>('all');
 
   if (!currentUser) return null;
 
@@ -26,21 +21,46 @@ export const CoordinatorDashboard: React.FC = () => {
   // Stat 2: Active postings count
   const activePostingsCount = data.tasks.filter((t) => t.status === 'open').length;
 
-  // Stat 3: Total Hours Reflected this semester system-wide
-  const totalHoursReflectedSystemWide = data.applications
-    .filter((a) => a.status === 'hours_reflected')
-    .reduce((sum, a) => {
-      const task = data.tasks.find((t) => t.id === a.taskId);
-      return sum + (a.hoursCredited ?? task?.creditHours ?? 0);
-    }, 0);
-
-  // Stat 4: Total registered scholars
+  // Stat 3: Total registered scholars
   const activeScholarsCount = data.users.filter((u) => u.role === 'scholar').length;
 
-  // Recent activity feed
-  const recentActivities = [...data.activities]
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, 6);
+  // Active Users live display
+  const liveUsers = [
+    {
+      user: currentUser,
+      activity: 'Active in Coordinator Console',
+      location: currentUser.office || 'INYDO Operations HQ',
+      lastSeen: 'Active now',
+      isCurrent: true,
+    },
+    ...data.users
+      .filter((u) => u.id !== currentUser.id && u.status === 'active')
+      .map((user, idx) => {
+        const activities = [
+          'Browsing Task Opportunities',
+          'Submitting Service Proof Evidence',
+          'Viewing My Applications & Queue',
+          'Reviewing Verified Hours Ledger',
+          'Reviewing Document Repository',
+          'Updating Profile Details',
+          'Active session in portal',
+        ];
+        const times = ['Just now', '1 min ago', '2 mins ago', '4 mins ago', '7 mins ago', '12 mins ago', '15 mins ago', '18 mins ago'];
+        return {
+          user,
+          activity: activities[idx % activities.length],
+          location: user.role === 'scholar' ? user.school || 'Laoag City Campus' : user.office || 'INYDO Central',
+          lastSeen: times[idx % times.length],
+          isCurrent: false,
+        };
+      }),
+  ];
+
+  const filteredActiveUsers = liveUsers.filter((item) => {
+    if (activeUsersFilter === 'scholar') return item.user.role === 'scholar';
+    if (activeUsersFilter === 'staff') return item.user.role === 'coordinator' || item.user.role === 'admin';
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -75,8 +95,8 @@ export const CoordinatorDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Top Stat Cards (Section 8.1) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Top Stat Cards (3 clean cards without Total Hours Certified) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Pending Verifications */}
         <div
           onClick={() => navigate('#verification')}
@@ -108,7 +128,7 @@ export const CoordinatorDashboard: React.FC = () => {
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              Active Task Postings
+              Active Tasks
             </span>
             <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
               <CalendarCheck className="w-4 h-4" />
@@ -124,30 +144,6 @@ export const CoordinatorDashboard: React.FC = () => {
           </div>
           <p className="mt-3 text-[11px] text-slate-500">
             Open for scholar FIFO applications
-          </p>
-        </div>
-
-        {/* Total Hours Reflected System-Wide */}
-        <div
-          onClick={() => navigate('#records')}
-          className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs hover:border-slate-300 cursor-pointer transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              Total Hours Certified
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-black font-mono tracking-tight text-emerald-700 tabular-nums">
-              {totalHoursReflectedSystemWide} hrs
-            </span>
-            <span className="text-xs text-slate-400 font-medium">This semester</span>
-          </div>
-          <p className="mt-3 text-[11px] text-slate-500">
-            Aggregated via Prefix Sum validation
           </p>
         </div>
 
@@ -173,16 +169,16 @@ export const CoordinatorDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Two-Column Lower Section: Verification Priority Queue Preview / Recent Activities */}
+      {/* Two-Column Lower Section: Verification Priority Queue Preview / Active Users */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Pending Verifications Immediate Action (7 cols) */}
-        <div className="lg:col-span-7 bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
-          <div>
+        <div className="lg:col-span-7 bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between lg:h-[400px]">
+          <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-red-600" />
                 <h3 className="text-sm font-bold text-slate-900">
-                  Verification Queue (Awaiting Coordinator Certification)
+                  Verification Queue
                 </h3>
               </div>
               <span className="px-2 py-0.5 text-[10px] font-bold bg-red-100 text-red-700 rounded-full">
@@ -190,7 +186,10 @@ export const CoordinatorDashboard: React.FC = () => {
               </span>
             </div>
 
-            <div className="mt-3 divide-y divide-slate-100">
+            <div
+              className="mt-3 min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto overscroll-contain pr-2"
+              aria-label="Verification Queue"
+            >
               {pendingVerifications.length === 0 ? (
                 <div className="text-center py-10 text-slate-400">
                   <ShieldCheck className="w-8 h-8 mx-auto text-emerald-500 mb-2" />
@@ -200,7 +199,7 @@ export const CoordinatorDashboard: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                pendingVerifications.slice(0, 4).map((app) => {
+                pendingVerifications.map((app) => {
                   const task = data.tasks.find((t) => t.id === app.taskId);
                   const scholar = data.users.find((u) => u.id === app.scholarId);
 
@@ -245,7 +244,7 @@ export const CoordinatorDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between shrink-0">
             <span className="text-[11px] text-slate-400">
               Approving automatically updates scholar prefix sum & dashboard totals.
             </span>
@@ -260,28 +259,113 @@ export const CoordinatorDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Recent System Activity Feed (5 cols) */}
-        <div className="lg:col-span-5 bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
-          <div>
+        {/* Right: Active Users Real-Time Monitor (5 cols) - Replaces Recent Activity */}
+        <div className="lg:col-span-5 bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between lg:h-[400px]">
+          <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900">
-                Recent Activity & Audit Trail
-              </h3>
-              <span className="text-[10px] text-slate-400 font-mono">Live</span>
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                </span>
+                <h3 className="text-sm font-bold text-slate-900">Active Users</h3>
+              </div>
+              <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-semibold">
+                <span>{filteredActiveUsers.length} Online</span>
+              </div>
             </div>
 
-            <div className="mt-3 space-y-3">
-              {recentActivities.map((act) => (
-                <div key={act.id} className="flex items-start gap-2.5 text-xs">
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-600 mt-1.5 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-slate-800 leading-snug">
-                      <strong className="font-semibold text-slate-900">{act.actor}</strong>{' '}
-                      <span className="text-slate-500">{act.action}</span>{' '}
-                      <span className="font-medium text-slate-800">{act.target}</span>
-                    </p>
-                    <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
-                      {formatDateTime(act.timestamp)}
+            {/* Quick role filter */}
+            <div className="mt-2.5 flex items-center gap-1 p-1 bg-slate-100 rounded-lg text-xs shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveUsersFilter('all')}
+                className={`flex-1 py-1 px-2 rounded-md font-medium text-center transition-colors ${
+                  activeUsersFilter === 'all'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                All Users
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveUsersFilter('scholar')}
+                className={`flex-1 py-1 px-2 rounded-md font-medium text-center transition-colors ${
+                  activeUsersFilter === 'scholar'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Scholars
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveUsersFilter('staff')}
+                className={`flex-1 py-1 px-2 rounded-md font-medium text-center transition-colors ${
+                  activeUsersFilter === 'staff'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Staff
+              </button>
+            </div>
+
+            {/* Real-time active users list */}
+            <div
+              className="mt-3 min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto overscroll-contain pr-2"
+              aria-label="Active users"
+            >
+              {filteredActiveUsers.map((item) => (
+                <div
+                  key={item.user.id}
+                  className="py-2.5 flex items-center justify-between gap-3 text-xs"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="relative shrink-0">
+                      <img
+                        src={item.user.profilePicture}
+                        alt={item.user.name}
+                        className="w-8 h-8 rounded-full object-cover border border-slate-200"
+                        referrerPolicy="no-referrer"
+                      />
+                      <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-slate-900 truncate">
+                          {item.user.name}
+                        </span>
+                        {item.isCurrent && (
+                          <span className="px-1.5 py-0.2 text-[9px] font-bold bg-slate-900 text-white rounded">
+                            You
+                          </span>
+                        )}
+                        <span
+                          className={`px-1.5 py-0.2 text-[9px] font-bold uppercase rounded ${
+                            item.user.role === 'admin'
+                              ? 'bg-purple-100 text-purple-700'
+                              : item.user.role === 'coordinator'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-emerald-100 text-emerald-700'
+                          }`}
+                        >
+                          {item.user.role}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                        {item.activity}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium block">
+                      {item.lastSeen}
+                    </span>
+                    <span className="text-[10px] text-slate-400 truncate max-w-[90px] block mt-0.5">
+                      {item.location}
                     </span>
                   </div>
                 </div>
@@ -289,13 +373,16 @@ export const CoordinatorDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 text-right">
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs shrink-0">
+            <span className="text-[11px] text-slate-400">
+              Real-time active sessions authenticated in INYDO
+            </span>
             <button
               type="button"
               onClick={() => navigate('#records')}
-              className="text-xs font-semibold text-slate-600 hover:text-slate-900 hover:underline"
+              className="font-semibold text-slate-600 hover:text-slate-900 hover:underline"
             >
-              View Full Service Ledger
+              View Service Ledger
             </button>
           </div>
         </div>

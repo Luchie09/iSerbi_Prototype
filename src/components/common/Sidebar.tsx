@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   X,
   Sparkles,
-  Settings,
   GraduationCap,
 } from 'lucide-react';
 
@@ -99,7 +98,7 @@ export const Sidebar: React.FC = () => {
       },
     ];
   } else if (currentUser.role === 'coordinator') {
-    // Coordinator order: Dashboard -> Task Opportunity Management -> Task Verification -> Service Records -> Document Management -> Profile (last)
+    // Coordinator order: Dashboard -> Task Opportunity Management -> Task Verification -> Service Records -> Document Management -> Notifications -> Profile (last)
     navItems = [
       {
         id: 'dashboard',
@@ -132,9 +131,16 @@ export const Sidebar: React.FC = () => {
         route: '#documents',
         icon: FolderOpen,
       },
+      {
+        id: 'notifications',
+        label: 'Notifications',
+        route: '#notifications',
+        icon: Bell,
+        badgeCount: unreadNotifs > 0 ? unreadNotifs : undefined,
+      },
     ];
   } else if (currentUser.role === 'admin') {
-    // Admin order: Dashboard -> User Management -> Scholar Recipients -> Settings
+    // Admin order: Dashboard -> User Management -> Scholar Recipients -> Notifications
     navItems = [
       {
         id: 'dashboard',
@@ -156,10 +162,11 @@ export const Sidebar: React.FC = () => {
         icon: Award,
       },
       {
-        id: 'settings',
-        label: 'Settings',
-        route: '#settings',
-        icon: Settings,
+        id: 'notifications',
+        label: 'Notifications',
+        route: '#notifications',
+        icon: Bell,
+        badgeCount: unreadNotifs > 0 ? unreadNotifs : undefined,
       },
     ];
   }

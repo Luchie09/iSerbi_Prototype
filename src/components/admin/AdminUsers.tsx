@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { User, Role, UserStatus, ScholarshipStatus, SCHOLARSHIP_PROGRAMS } from '../../types';
-import { formatDateOnly, getCumulativeHours } from '../../logic/core';
+import { formatDateOnly, getCumulativeHours, calculateAge } from '../../logic/core';
 import {
   Users,
   Search,
@@ -23,6 +23,9 @@ import {
   Sparkles,
   AlertCircle,
   Copy,
+  Camera,
+  MapPin,
+  User as UserIcon,
 } from 'lucide-react';
 
 const splitFullName = (fullName: string) => {
@@ -85,18 +88,26 @@ export const AdminUsers: React.FC = () => {
 
   // Add User Form State
   const [addForm, setAddForm] = useState({
-    // Shared / Staff fields
-    fullName: '',
-    email: '',
-    contact: '',
-    office: 'INYDO — Youth Development Office',
-    // Scholar-specific fields
+    // Staff & Personal fields
     firstName: '',
     middleName: '',
     lastName: '',
     suffixName: '',
+    dateOfBirth: '',
+    sex: '' as 'Male' | 'Female' | '',
+    profilePicture: '',
+
+    // Employment fields
+    office: 'INYDO — Youth Development Office',
+    jobPosition: '',
+
+    // Contact & Address fields
+    email: '',
+    contact: '',
     municipality: 'Laoag City',
     Baranggay: '',
+
+    // Scholar-specific fields
     school: 'Mariano Marcos State University',
     collegeProgram: 'BS Information Technology',
     yearLevel: '1st Year',
@@ -125,11 +136,53 @@ export const AdminUsers: React.FC = () => {
 
   // Edit Staff Form State (Mirrors AdminProfile.tsx / CoordinatorProfile.tsx)
   const [editStaffForm, setEditStaffForm] = useState({
-    name: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    suffixName: '',
+    dateOfBirth: '',
+    sex: '' as 'Male' | 'Female' | '',
+    office: '',
+    jobPosition: '',
     email: '',
     contact: '',
-    office: '',
+    municipality: '',
+    Baranggay: '',
+    profilePicture: '',
   });
+
+  // Photo upload handlers
+  const handleAddStaffPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file.', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setAddForm((prev) => ({ ...prev, profilePicture: reader.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleEditStaffPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file.', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setEditStaffForm((prev) => ({ ...prev, profilePicture: reader.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Calculate filtered users
   const filteredUsers = data.users.filter((user) => {
@@ -143,7 +196,8 @@ export const AdminUsers: React.FC = () => {
       const matchEmail = user.email.toLowerCase().includes(q);
       const matchSchool = (user.school || '').toLowerCase().includes(q);
       const matchOffice = (user.office || '').toLowerCase().includes(q);
-      if (!matchName && !matchId && !matchEmail && !matchSchool && !matchOffice) {
+      const matchJob = (user.jobPosition || '').toLowerCase().includes(q);
+      if (!matchName && !matchId && !matchEmail && !matchSchool && !matchOffice && !matchJob) {
         return false;
       }
     }
@@ -160,17 +214,23 @@ export const AdminUsers: React.FC = () => {
   const handleOpenAddUser = (initialRole: Role = 'scholar') => {
     setAddRole(initialRole);
     setAddForm({
-      fullName: '',
-      email: '',
-      contact: '',
-      office:
-        initialRole === 'admin'
-          ? 'PGIN — Management Information Systems Office (MISO)'
-          : 'INYDO — Youth Development Office',
       firstName: '',
       middleName: '',
       lastName: '',
       suffixName: '',
+      dateOfBirth: '',
+      sex: '',
+      profilePicture: '',
+      office:
+        initialRole === 'admin'
+          ? 'PGIN — Management Information Systems Office (MISO)'
+          : 'INYDO — Youth Development Office',
+      jobPosition:
+        initialRole === 'admin'
+          ? 'Information Technology Officer'
+          : 'Youth Development Officer',
+      email: '',
+      contact: '',
       municipality: 'Laoag City',
       Baranggay: '',
       school: 'Mariano Marcos State University',
@@ -225,6 +285,7 @@ export const AdminUsers: React.FC = () => {
         status: 'active',
         scholarshipStatus: 'Active',
         profilePicture:
+          addForm.profilePicture ||
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
       });
 
@@ -246,30 +307,52 @@ export const AdminUsers: React.FC = () => {
       );
     } else {
       // Admin or Coordinator
-      if (!addForm.fullName.trim() || !addForm.email.trim()) {
-        showToast('Please provide full name and official email.', 'error');
+      if (!addForm.firstName.trim() || !addForm.lastName.trim() || !addForm.email.trim()) {
+        showToast('Please provide first name, last name, and official email.', 'error');
         return;
       }
 
+      const fullName = [
+        addForm.firstName.trim(),
+        addForm.middleName.trim(),
+        addForm.lastName.trim(),
+        addForm.suffixName.trim(),
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      const computedAge = calculateAge(addForm.dateOfBirth);
+
       registerUser({
         role: addRole,
-        name: addForm.fullName.trim(),
+        name: fullName,
+        firstName: addForm.firstName.trim(),
+        middleName: addForm.middleName.trim(),
+        lastName: addForm.lastName.trim(),
+        suffixName: addForm.suffixName.trim(),
         userId: autoUserId,
         email: addForm.email.trim(),
         contact: addForm.contact.trim() || '0917-123-4567',
+        dateOfBirth: addForm.dateOfBirth.trim() || undefined,
+        age: computedAge ?? undefined,
+        sex: (addForm.sex as 'Male' | 'Female') || undefined,
         office: addForm.office.trim(),
+        jobPosition: addForm.jobPosition.trim(),
+        municipality: addForm.municipality.trim(),
+        Baranggay: addForm.Baranggay.trim(),
         password: tempPassword,
         mustChangePassword: true,
         status: 'active',
         profilePicture:
-          addRole === 'admin'
-            ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80'
-            : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80',
+          addForm.profilePicture ||
+          (addRole === 'admin'
+            ? 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80'
+            : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80'),
       });
 
       const roleLabel = addRole === 'admin' ? 'Administrator' : 'Coordinator';
       showToast(
-        `${roleLabel} account created for ${addForm.fullName.trim()} (${autoUserId}) with temporary password "${tempPassword}".`,
+        `${roleLabel} account created for ${fullName} (${autoUserId}) with temporary password "${tempPassword}".`,
         'success'
       );
     }
@@ -280,8 +363,8 @@ export const AdminUsers: React.FC = () => {
   // Open Edit User Modal
   const handleOpenEditUser = (user: User) => {
     setEditingUser(user);
+    const parts = splitFullName(user.name);
     if (user.role === 'scholar') {
-      const parts = splitFullName(user.name);
       setEditScholarForm({
         firstName: user.firstName || parts.firstName || '',
         middleName: user.middleName || parts.middleName || '',
@@ -300,10 +383,19 @@ export const AdminUsers: React.FC = () => {
     } else {
       // Coordinator or Admin
       setEditStaffForm({
-        name: user.name || '',
+        firstName: user.firstName || parts.firstName || '',
+        middleName: user.middleName || parts.middleName || '',
+        lastName: user.lastName || parts.lastName || '',
+        suffixName: user.suffixName || parts.suffixName || '',
+        dateOfBirth: user.dateOfBirth || '',
+        sex: user.sex || '',
+        office: user.office || '',
+        jobPosition: user.jobPosition || '',
         email: user.email || '',
         contact: user.contact || '',
-        office: user.office || '',
+        municipality: user.municipality || '',
+        Baranggay: user.Baranggay || '',
+        profilePicture: user.profilePicture || '',
       });
     }
   };
@@ -347,15 +439,37 @@ export const AdminUsers: React.FC = () => {
 
       showToast(`Scholar profile for ${fullName} updated successfully.`, 'success');
     } else {
-      // Coordinator or Admin: ONLY edit fields relevant to that role's profile
+      // Coordinator or Admin: Update Personal, Employment, Contact, Photo
+      const fullName = [
+        editStaffForm.firstName.trim(),
+        editStaffForm.middleName.trim(),
+        editStaffForm.lastName.trim(),
+        editStaffForm.suffixName.trim(),
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      const computedAge = calculateAge(editStaffForm.dateOfBirth);
+
       updateUserProfile(editingUser.id, {
-        name: editStaffForm.name.trim(),
+        name: fullName || editingUser.name,
+        firstName: editStaffForm.firstName.trim(),
+        middleName: editStaffForm.middleName.trim(),
+        lastName: editStaffForm.lastName.trim(),
+        suffixName: editStaffForm.suffixName.trim(),
+        dateOfBirth: editStaffForm.dateOfBirth.trim() || undefined,
+        age: computedAge ?? undefined,
+        sex: (editStaffForm.sex as 'Male' | 'Female') || undefined,
+        office: editStaffForm.office.trim(),
+        jobPosition: editStaffForm.jobPosition.trim(),
         email: editStaffForm.email.trim(),
         contact: editStaffForm.contact.trim(),
-        office: editStaffForm.office.trim(),
+        municipality: editStaffForm.municipality.trim(),
+        Baranggay: editStaffForm.Baranggay.trim(),
+        profilePicture: editStaffForm.profilePicture || editingUser.profilePicture,
       });
 
-      showToast(`Profile details for ${editStaffForm.name.trim()} updated.`, 'success');
+      showToast(`Profile details for ${fullName || editingUser.name} updated.`, 'success');
     }
 
     setEditingUser(null);
@@ -611,9 +725,16 @@ export const AdminUsers: React.FC = () => {
                             <span className="text-[11px] text-slate-400 font-medium">/ 40 hrs</span>
                           </div>
                         ) : (
-                          <span className="text-[11px] font-medium text-slate-700 line-clamp-1">
-                            {user.office || 'Provincial Government of Ilocos Norte'}
-                          </span>
+                          <div className="min-w-0">
+                            {user.jobPosition && (
+                              <div className="font-semibold text-slate-800 truncate text-xs">
+                                {user.jobPosition}
+                              </div>
+                            )}
+                            <div className="text-[11px] font-medium text-slate-500 truncate">
+                              {user.office || 'Provincial Government of Ilocos Norte'}
+                            </div>
+                          </div>
                         )}
                       </td>
 
@@ -963,63 +1084,243 @@ export const AdminUsers: React.FC = () => {
                 </div>
               )}
 
-              {/* 2. Coordinator / Admin Fields (Mirrors Staff Profile) */}
+              {/* 2. Coordinator / Admin Fields (Mirrors Profile Page Logical Sections) */}
               {addRole !== 'scholar' && (
                 <div className="space-y-4 pt-1">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={addForm.fullName}
-                      onChange={(e) => setAddForm({ ...addForm, fullName: e.target.value })}
-                      placeholder="e.g. Maria Remedios Santos"
-                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Official Government Email *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={addForm.email}
-                        onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
-                        placeholder="staff@ilocosnorte.gov.ph"
-                        className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  {/* Section 1: Profile Photo */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                      Profile Photo
+                    </span>
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={
+                          addForm.profilePicture ||
+                          (addRole === 'admin'
+                            ? 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80'
+                            : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80')
+                        }
+                        alt="Preview"
+                        className="w-16 h-16 rounded-xl object-cover border border-slate-300 shadow-xs"
                       />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Contact Phone
-                      </label>
-                      <input
-                        type="text"
-                        value={addForm.contact}
-                        onChange={(e) => setAddForm({ ...addForm, contact: e.target.value })}
-                        placeholder="0917-123-4567"
-                        className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                      />
+                      <div>
+                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-xs transition-colors">
+                          <Camera className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Upload Photo</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleAddStaffPhotoUpload}
+                          />
+                        </label>
+                        <p className="text-[10px] text-slate-400 mt-1">
+                          PNG, JPG, or WebP. Auto-generates default if empty.
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Office / Department
-                    </label>
-                    <input
-                      type="text"
-                      value={addForm.office}
-                      onChange={(e) => setAddForm({ ...addForm, office: e.target.value })}
-                      placeholder="e.g. INYDO — Youth Development Office"
-                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                    />
+                  {/* Section 2: Personal Information */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                      Personal Information
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Last Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={addForm.lastName}
+                          onChange={(e) => setAddForm({ ...addForm, lastName: e.target.value })}
+                          placeholder="e.g. Que"
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          First Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={addForm.firstName}
+                          onChange={(e) => setAddForm({ ...addForm, firstName: e.target.value })}
+                          placeholder="e.g. James Bryan"
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Middle Name
+                        </label>
+                        <input
+                          type="text"
+                          value={addForm.middleName}
+                          onChange={(e) => setAddForm({ ...addForm, middleName: e.target.value })}
+                          placeholder="Optional"
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Suffix Name
+                        </label>
+                        <input
+                          type="text"
+                          value={addForm.suffixName}
+                          onChange={(e) => setAddForm({ ...addForm, suffixName: e.target.value })}
+                          placeholder="e.g. Jr., III, Sr."
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Date of Birth
+                        </label>
+                        <input
+                          type="date"
+                          value={addForm.dateOfBirth}
+                          onChange={(e) => setAddForm({ ...addForm, dateOfBirth: e.target.value })}
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                        {calculateAge(addForm.dateOfBirth) !== null && (
+                          <p className="mt-1 text-[11px] text-emerald-700 font-semibold">
+                            Auto-calculated Age: {calculateAge(addForm.dateOfBirth)} years old
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Sex
+                        </label>
+                        <select
+                          value={addForm.sex}
+                          onChange={(e) => setAddForm({ ...addForm, sex: e.target.value as any })}
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        >
+                          <option value="">Select Sex</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3: Employment Information */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                      Employment Information
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Office / Department *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={addForm.office}
+                          onChange={(e) => setAddForm({ ...addForm, office: e.target.value })}
+                          placeholder={
+                            addRole === 'admin'
+                              ? 'PGIN — Management Information Systems Office (MISO)'
+                              : 'INYDO — Youth Development Office'
+                          }
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Job Position / Designation *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={addForm.jobPosition}
+                          onChange={(e) => setAddForm({ ...addForm, jobPosition: e.target.value })}
+                          placeholder={
+                            addRole === 'admin'
+                              ? 'Information Technology Officer II'
+                              : 'Provincial Youth Development Officer IV'
+                          }
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 4: Contact Information */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                      Contact Information
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Official Government Email *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={addForm.email}
+                          onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+                          placeholder={
+                            addRole === 'admin' ? 'admin@ilocosnorte.gov.ph' : 'coordinator@inydo.ilocosnorte.gov.ph'
+                          }
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Contact Number *
+                        </label>
+                        <input
+                          type="tel"
+                          required
+                          value={addForm.contact}
+                          onChange={(e) => setAddForm({ ...addForm, contact: e.target.value })}
+                          placeholder="0917-123-4567"
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Municipality / City
+                        </label>
+                        <input
+                          type="text"
+                          value={addForm.municipality}
+                          onChange={(e) => setAddForm({ ...addForm, municipality: e.target.value })}
+                          placeholder="e.g. Laoag City"
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Barangay
+                        </label>
+                        <input
+                          type="text"
+                          value={addForm.Baranggay}
+                          onChange={(e) => setAddForm({ ...addForm, Baranggay: e.target.value })}
+                          placeholder="e.g. Brgy. 1 San Lorenzo"
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1335,71 +1636,248 @@ export const AdminUsers: React.FC = () => {
 
               {/* ========================================================= */}
               {/* 2. ADMIN & COORDINATOR PROFILE EDIT FIELDS                */}
-              {/* (Only role-appropriate fields: Name, Email, Contact, Office)*/}
+              {/* (Mirrors Profile Page Logical Sections)                   */}
               {/* ========================================================= */}
               {editingUser.role !== 'scholar' && (
                 <div className="space-y-4">
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700">
-                    <span className="font-bold">Staff Profile Fields:</span> Displaying only fields relevant to {editingUser.role === 'admin' ? 'Administrator' : 'Coordinator'} accounts (No scholar-specific fields).
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editStaffForm.name}
-                      onChange={(e) => setEditStaffForm({ ...editStaffForm, name: e.target.value })}
-                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Official Government Email *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={editStaffForm.email}
-                        onChange={(e) =>
-                          setEditStaffForm({ ...editStaffForm, email: e.target.value })
-                        }
-                        className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  {/* Section 1: Profile Photo */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                      Profile Photo
+                    </span>
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={editStaffForm.profilePicture || editingUser.profilePicture}
+                        alt={editingUser.name}
+                        className="w-16 h-16 rounded-xl object-cover border border-slate-300 shadow-xs"
                       />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Contact Phone
-                      </label>
-                      <input
-                        type="text"
-                        value={editStaffForm.contact}
-                        onChange={(e) =>
-                          setEditStaffForm({ ...editStaffForm, contact: e.target.value })
-                        }
-                        className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                      />
+                      <div>
+                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-xs transition-colors">
+                          <Camera className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Change Photo</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleEditStaffPhotoUpload}
+                          />
+                        </label>
+                        <p className="text-[10px] text-slate-400 mt-1">
+                          Upload image file to update avatar.
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Assigned Office / Department
-                    </label>
-                    <input
-                      type="text"
-                      value={editStaffForm.office}
-                      onChange={(e) =>
-                        setEditStaffForm({ ...editStaffForm, office: e.target.value })
-                      }
-                      placeholder="e.g. INYDO — Youth Development Office"
-                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                    />
+                  {/* Section 2: Personal Information */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                      Personal Information
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Last Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editStaffForm.lastName}
+                          onChange={(e) =>
+                            setEditStaffForm({ ...editStaffForm, lastName: e.target.value })
+                          }
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          First Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editStaffForm.firstName}
+                          onChange={(e) =>
+                            setEditStaffForm({ ...editStaffForm, firstName: e.target.value })
+                          }
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Middle Name
+                        </label>
+                        <input
+                          type="text"
+                          value={editStaffForm.middleName}
+                          onChange={(e) =>
+                            setEditStaffForm({ ...editStaffForm, middleName: e.target.value })
+                          }
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Suffix Name
+                        </label>
+                        <input
+                          type="text"
+                          value={editStaffForm.suffixName}
+                          onChange={(e) =>
+                            setEditStaffForm({ ...editStaffForm, suffixName: e.target.value })
+                          }
+                          placeholder="e.g. Jr., III, Sr."
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Date of Birth
+                        </label>
+                        <input
+                          type="date"
+                          value={editStaffForm.dateOfBirth}
+                          onChange={(e) =>
+                            setEditStaffForm({ ...editStaffForm, dateOfBirth: e.target.value })
+                          }
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                        {calculateAge(editStaffForm.dateOfBirth) !== null && (
+                          <p className="mt-1 text-[11px] text-emerald-700 font-semibold">
+                            Auto-calculated Age: {calculateAge(editStaffForm.dateOfBirth)} years old
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Sex
+                        </label>
+                        <select
+                          value={editStaffForm.sex}
+                          onChange={(e) =>
+                            setEditStaffForm({ ...editStaffForm, sex: e.target.value as any })
+                          }
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        >
+                          <option value="">Select Sex</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3: Employment Information */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                      Employment Information
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Office / Department *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editStaffForm.office}
+                          onChange={(e) =>
+                            setEditStaffForm({ ...editStaffForm, office: e.target.value })
+                          }
+                          placeholder="e.g. INYDO — Youth Development Office"
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Job Position / Designation *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editStaffForm.jobPosition}
+                          onChange={(e) =>
+                            setEditStaffForm({ ...editStaffForm, jobPosition: e.target.value })
+                          }
+                          placeholder="e.g. Youth Development Officer"
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 4: Contact Information */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                      Contact Information
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Official Government Email *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={editStaffForm.email}
+                          onChange={(e) =>
+                            setEditStaffForm({ ...editStaffForm, email: e.target.value })
+                          }
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Contact Phone *
+                        </label>
+                        <input
+                          type="tel"
+                          required
+                          value={editStaffForm.contact}
+                          onChange={(e) =>
+                            setEditStaffForm({ ...editStaffForm, contact: e.target.value })
+                          }
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Municipality / City
+                        </label>
+                        <input
+                          type="text"
+                          value={editStaffForm.municipality}
+                          onChange={(e) =>
+                            setEditStaffForm({ ...editStaffForm, municipality: e.target.value })
+                          }
+                          placeholder="e.g. Laoag City"
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Barangay
+                        </label>
+                        <input
+                          type="text"
+                          value={editStaffForm.Baranggay}
+                          onChange={(e) =>
+                            setEditStaffForm({ ...editStaffForm, Baranggay: e.target.value })
+                          }
+                          placeholder="e.g. Brgy. 1 San Lorenzo"
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

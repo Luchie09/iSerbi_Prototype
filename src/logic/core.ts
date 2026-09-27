@@ -241,6 +241,22 @@ export function formatDateOnly(dateString?: string | null): string {
 }
 
 /**
+ * Auto-calculates age from a date of birth string (YYYY-MM-DD or ISO).
+ */
+export function calculateAge(dateOfBirth?: string | null): number | null {
+  if (!dateOfBirth) return null;
+  const dob = new Date(dateOfBirth);
+  if (isNaN(dob.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age >= 0 ? age : null;
+}
+
+/**
  * Client-side CSV Exporter for Service Records
  */
 export function exportToCSV(
@@ -259,4 +275,30 @@ export function exportToCSV(
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+export type TaskCategory = 'open' | 'closed' | 'full' | 'finished' | 'draft';
+
+/**
+ * Determines the normalized category/status of a task:
+ * - 'draft': Created but not yet published (coordinator-only)
+ * - 'finished': Task itself has already been completed/conducted
+ * - 'closed': Application deadline has passed or applications no longer accepted
+ * - 'full': Maximum slots filled
+ * - 'open': Application period is active, scholars can apply
+ */
+export function getTaskCategory(task: Task): TaskCategory {
+  if (task.status === 'draft') return 'draft';
+  if (task.status === 'finished' || (task.status as string) === 'completed') return 'finished';
+  if (task.status === 'closed') return 'closed';
+  if (task.status === 'full' || task.slotsFilled >= task.slotsTotal) return 'full';
+
+  if (task.deadline) {
+    const deadlineTime = new Date(task.deadline).getTime();
+    if (!isNaN(deadlineTime) && deadlineTime < Date.now()) {
+      return 'closed';
+    }
+  }
+
+  return 'open';
 }

@@ -24,8 +24,10 @@ export interface User {
   lastName?: string;
   suffixName?: string;
   dateOfBirth?: string;
+  age?: number;
   sex?: 'Male' | 'Female';
   office?: string | null;
+  jobPosition?: string;
   password: string;
   profilePicture: string;
   dateRegistered: string;
@@ -69,7 +71,7 @@ export interface RegistrationException {
   notes?: string;
 }
 
-export type TaskStatus = 'open' | 'full' | 'completed' | 'closed' | 'draft';
+export type TaskStatus = 'open' | 'closed' | 'full' | 'finished' | 'draft' | 'completed';
 
 export interface Task {
   id: string;
@@ -81,6 +83,7 @@ export interface Task {
   slotsFilled: number;
   dateStart: string;
   dateEnd: string;
+  deadline?: string;
   location: string;
   requirements: string;
   status: TaskStatus;

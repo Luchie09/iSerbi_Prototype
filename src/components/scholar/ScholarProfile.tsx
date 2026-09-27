@@ -18,6 +18,7 @@ import {
   Award,
   Sparkles,
   TrendingUp,
+  Camera,
 } from 'lucide-react';
 
 export const ScholarProfile: React.FC = () => {
@@ -115,6 +116,10 @@ export const ScholarProfile: React.FC = () => {
     reader.onload = () => {
       const result = typeof reader.result === 'string' ? reader.result : currentUser.profilePicture;
       setProfilePicture(result);
+      if (!isEditing) {
+        updateUserProfile(currentUser.id, { profilePicture: result });
+        showToast('Profile photo successfully updated.', 'success');
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -133,24 +138,25 @@ export const ScholarProfile: React.FC = () => {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-slate-100">
           <div className="flex items-center gap-5">
-            <div className="relative">
+            <div className="relative group">
               <img
                 src={isEditing ? profilePicture || currentUser.profilePicture : currentUser.profilePicture}
                 alt={currentUser.name}
-                className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-200 shadow-sm"
+                className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-200 shadow-sm transition group-hover:brightness-95"
                 referrerPolicy="no-referrer"
               />
-              {isEditing && (
-                <label className="absolute -bottom-2 -right-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-red-200 bg-red-600 text-white shadow-sm transition hover:bg-red-700">
-                  <Edit2 className="h-3.5 w-3.5" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleProfileImageChange}
-                  />
-                </label>
-              )}
+              <label
+                className="absolute -bottom-1 -right-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-red-600 text-white shadow-md transition hover:bg-red-700 hover:scale-110 active:scale-95"
+                title="Upload / change profile picture"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleProfileImageChange}
+                />
+              </label>
             </div>
             <div>
               <div className="flex items-center gap-2">

@@ -43,6 +43,7 @@ interface AppContextType {
   switchUser: (userId: string) => void;
   logout: () => void;
   applyForTask: (taskId: string) => boolean;
+  cancelApplication: (applicationId: string) => void;
   submitEvidence: (applicationId: string, fileName: string, notes: string) => void;
   approveApplicationAction: (applicationId: string) => void;
   rejectApplicationAction: (applicationId: string, reason: string) => void;
@@ -309,6 +310,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     [currentUser, data.applications, data.tasks, showToast]
   );
 
+  const cancelApplication = useCallback(
+    (applicationId: string) => {
+      const app = data.applications.find((a) => a.id === applicationId);
+      if (!app) return;
+      const task = data.tasks.find((t) => t.id === app.taskId);
+      const taskTitle = task?.title || 'Task Opportunity';
+
+      setData((prev) => ({
+        ...prev,
+        applications: prev.applications.filter((a) => a.id !== applicationId),
+        tasks: prev.tasks.map((t) =>
+          t.id === app.taskId
+            ? {
+                ...t,
+                slotsFilled: Math.max(0, t.slotsFilled - 1),
+                status: t.status === 'full' ? 'open' : t.status,
+              }
+            : t
+        ),
+        activities: [
+          {
+            id: `ACT-${Date.now()}`,
+            actor: currentUser?.name || 'Scholar',
+            action: 'Cancelled application',
+            target: taskTitle,
+            timestamp: new Date().toISOString(),
+            role: currentUser?.role || 'scholar',
+          },
+          ...prev.activities,
+        ],
+      }));
+      showToast(`Application for "${taskTitle}" cancelled.`, 'info');
+    },
+    [currentUser, data.applications, data.tasks, showToast]
+  );
+
   const submitEvidence = useCallback(
     (applicationId: string, fileName: string, notes: string) => {
       const now = new Date().toISOString();
@@ -481,7 +518,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const newTask: Task = {
         ...taskData,
         id: newTaskId,
-        status: isDraft ? 'draft' : 'open',
+        status: isDraft ? 'draft' : (taskData.status || 'open'),
         slotsFilled: 0,
         createdBy: currentUser.id,
         createdAt: now,
@@ -542,14 +579,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteTask = useCallback(
     (taskId: string) => {
+      const task = data.tasks.find((t) => t.id === taskId);
+      const title = task?.title || 'Task Opportunity';
       setData((prev) => ({
         ...prev,
         tasks: prev.tasks.filter((t) => t.id !== taskId),
         applications: prev.applications.filter((a) => a.taskId !== taskId),
+        activities: [
+          {
+            id: `ACT-${Date.now()}`,
+            actor: currentUser?.name || 'Coordinator',
+            action: 'Deleted task opportunity',
+            target: title,
+            timestamp: new Date().toISOString(),
+            role: currentUser?.role || 'coordinator',
+          },
+          ...prev.activities,
+        ],
       }));
-      showToast('Task removed.', 'info');
+      showToast(`Task "${title}" permanently deleted.`, 'success');
     },
-    [showToast]
+    [currentUser, data.tasks, showToast]
   );
 
   const uploadDocument = useCallback(
@@ -972,6 +1022,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         switchUser,
         logout,
         applyForTask,
+        cancelApplication,
         submitEvidence,
         approveApplicationAction,
         rejectApplicationAction,

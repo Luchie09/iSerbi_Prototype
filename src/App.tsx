@@ -165,6 +165,8 @@ const AppContent: React.FC = () => {
           return <CoordinatorRecords />;
         case '#documents':
           return <CoordinatorDocuments />;
+        case '#notifications':
+          return <ScholarNotifications />;
         case '#settings':
           return <ScholarSettings />;
         case '#profile':
@@ -180,6 +182,8 @@ const AppContent: React.FC = () => {
           return <AdminUsers />;
         case '#scholars':
           return <AdminScholars />;
+        case '#notifications':
+          return <ScholarNotifications />;
         case '#settings':
           return <AdminSettings />;
         case '#profile':

@@ -85,7 +85,7 @@ export const CoordinatorVerification: React.FC = () => {
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-red-600" />
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                Task Verification & Certification Queue
+                Verification Queue
               </h2>
             </div>
             <p className="text-xs text-slate-500 mt-1 max-w-2xl">
@@ -146,9 +146,9 @@ export const CoordinatorVerification: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
             <table className="w-full text-left text-xs border-collapse">
-              <thead>
+              <thead className="sticky top-0 bg-slate-50 z-10 shadow-xs">
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
                   <th className="py-3 px-4">Scholar Recipient</th>
                   <th className="py-3 px-4">Community Task Activity</th>

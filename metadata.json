@@ -1,0 +1,6 @@
+{
+  "name": "iSerbi — INYDO Community Service Queuing & Tracking",
+  "description": "A Web-Based System for Optimized INYDO Community Service Queuing, Allocation, and Tracking Records using FIFO and Prefix Sum Algorithm.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

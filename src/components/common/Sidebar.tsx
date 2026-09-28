@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   LayoutDashboard,
@@ -34,6 +34,36 @@ export const Sidebar: React.FC = () => {
     sidebarCollapsed,
     data,
   } = useApp();
+
+  const [isDesktop, setIsDesktop] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      const desktop = window.innerWidth >= 1024;
+      setIsDesktop(desktop);
+
+      if (!desktop) {
+        setSidebarOpen(false);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [setSidebarOpen]);
+
+  useEffect(() => {
+    if (!isDesktop) {
+      setSidebarOpen(false);
+    }
+  }, [isDesktop, setSidebarOpen]);
+
+  const sidebarVisible = isDesktop || sidebarOpen;
+  const desktopWidthClass = sidebarCollapsed ? 'w-[72px]' : 'w-[260px]';
+  const mobileWidthClass = 'w-[82vw] max-w-[260px]';
+  const mobileTranslateClass = sidebarOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : '-translate-x-full opacity-0 pointer-events-none';
 
   if (!currentUser) return null;
 
@@ -191,9 +221,11 @@ export const Sidebar: React.FC = () => {
 
       {/* Main Sidebar Shell */}
       <aside
-        className={`fixed top-3 bottom-3 left-3 z-50 flex flex-col overflow-hidden border border-slate-200/90 bg-white/90 backdrop-blur-xl shadow-[0_18px_50px_rgba(15,23,42,0.10)] transition-all duration-200 ease-in-out lg:translate-x-0 rounded-[30px] ${
-          sidebarCollapsed ? 'w-[72px]' : 'w-[260px]'
-        } ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed top-3 bottom-3 left-3 z-50 flex flex-col overflow-hidden border border-slate-200/90 bg-white/90 backdrop-blur-xl shadow-[0_18px_50px_rgba(15,23,42,0.10)] transition-all duration-200 ease-in-out rounded-[30px] ${
+          isDesktop ? desktopWidthClass : mobileWidthClass
+        } ${isDesktop ? (sidebarVisible ? 'translate-x-0' : '-translate-x-full') : mobileTranslateClass} ${
+          isDesktop ? 'lg:translate-x-0 lg:left-3' : 'lg:-translate-x-full'
+        } ${!isDesktop && !sidebarOpen ? 'invisible' : 'visible'}`}
       >
         <div className="flex items-center justify-between h-20 px-4 bg-white/70">
           {!sidebarCollapsed && (

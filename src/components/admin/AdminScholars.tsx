@@ -422,7 +422,7 @@ export const AdminScholars: React.FC = () => {
             className="px-3.5 py-2.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl transition-colors flex items-center gap-1.5 shadow-xs"
           >
             <Plus className="w-4 h-4 text-slate-600" />
-            <span>+ Add Recipient</span>
+            <span> Add Recipient</span>
           </button>
 
           <button

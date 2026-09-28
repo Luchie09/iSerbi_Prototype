@@ -26,6 +26,7 @@ import {
   Camera,
   MapPin,
   User as UserIcon,
+  Trash2,
 } from 'lucide-react';
 
 const splitFullName = (fullName: string) => {
@@ -69,6 +70,7 @@ export const AdminUsers: React.FC = () => {
   const {
     data,
     toggleUserStatus,
+    deleteUserAccount,
     resetUserPassword,
     registerUser,
     updateUserProfile,
@@ -486,6 +488,15 @@ export const AdminUsers: React.FC = () => {
     );
   };
 
+  const handleDeleteUserAccount = (user: User) => {
+    const confirmed = window.confirm(
+      `This will permanently delete the account for ${user.name} (${user.userId}).\n\nThis is different from deactivating an account and removes the user from the system. Continue?`
+    );
+
+    if (!confirmed) return;
+    deleteUserAccount(user.id);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Banner */}
@@ -506,7 +517,7 @@ export const AdminUsers: React.FC = () => {
           className="px-4 py-2.5 text-xs font-bold text-white bg-[#d92d20] hover:bg-[#b42318] rounded-xl shadow-xs transition-colors flex items-center gap-2 self-start md:self-auto"
         >
           <Plus className="w-4 h-4" />
-          <span>+ Add User Account</span>
+          <span> Add User Account</span>
         </button>
       </div>
 
@@ -778,6 +789,16 @@ export const AdminUsers: React.FC = () => {
                             ) : (
                               <UserCheck className="w-4 h-4" />
                             )}
+                          </button>
+
+                          {/* Permanently delete account */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteUserAccount(user)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete account permanently"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

@@ -67,6 +67,7 @@ interface AppContextType {
   deleteRegistrationException: (id: string) => void;
   approveUserRegistration: (userId: string) => void;
   toggleUserStatus: (userId: string) => void;
+  deleteUserAccount: (userId: string) => void;
   resetUserPassword: (userId: string, newPass?: string) => void;
   overrideServiceRecord: (applicationId: string, hours: number, status: ApplicationStatus) => void;
   markNotifRead: (notifId: string) => void;
@@ -964,6 +965,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     [showToast]
   );
 
+  const deleteUserAccount = useCallback(
+    (userId: string) => {
+      const targetUser = data.users.find((u) => u.id === userId);
+      if (!targetUser) {
+        showToast('User account not found.', 'error');
+        return;
+      }
+
+      setData((prev) => ({
+        ...prev,
+        users: prev.users.filter((u) => u.id !== userId),
+        notifications: prev.notifications.filter((n) => n.userId !== userId),
+        applications: prev.applications.filter((a) => a.scholarId !== userId),
+      }));
+
+      if (currentUserId === userId) {
+        setCurrentUserId(null);
+        window.location.hash = '#login';
+      }
+
+      showToast(`Account for ${targetUser.name} was permanently deleted.`, 'info');
+    },
+    [currentUserId, data.users, showToast]
+  );
+
   const resetUserPassword = useCallback(
     (userId: string, newPass = 'password123') => {
       setData((prev) => ({
@@ -1072,6 +1098,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         deleteRegistrationException,
         approveUserRegistration,
         toggleUserStatus,
+        deleteUserAccount,
         resetUserPassword,
         overrideServiceRecord,
         markNotifRead,

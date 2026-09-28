@@ -202,7 +202,7 @@ const AppContent: React.FC = () => {
       <Sidebar />
 
       {/* Main Content Viewport Area with desktop left padding for 260px sidebar */}
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-200 ${sidebarCollapsed ? 'lg:pl-[88px]' : 'lg:pl-[278px]'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-200 ${sidebarCollapsed ? 'lg:pl-[88px]' : 'lg:pl-[278px]'} ${!sidebarCollapsed ? 'lg:pl-[278px]' : 'lg:pl-[88px]'}`}>
         {/* Top Navigation Bar */}
         <TopBar pageTitle={pageTitle} breadcrumb={breadcrumbs} />
 

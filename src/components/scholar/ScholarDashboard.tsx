@@ -328,7 +328,7 @@ export const ScholarDashboard: React.FC = () => {
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-600" />
-                <h3 className="text-2xl font-bold text-slate-900">
+                <h3 className="text-xl font-bold text-slate-900">
                   Task Reminder
                 </h3>
               </div>

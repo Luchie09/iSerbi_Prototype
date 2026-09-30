@@ -127,7 +127,7 @@ export const INITIAL_DEMO_DATA: DemoDatabase = {
       suffixName: '',
       office: null,
       password: 'password123',
-      profilePicture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      profilePicture: '/assets/7.jpg',
       dateRegistered: '2024-06-15',
       scholarshipStatus: 'Active',
     },
@@ -295,7 +295,7 @@ export const INITIAL_DEMO_DATA: DemoDatabase = {
       municipality: 'Laoag City',
       Baranggay: 'Brgy. 1 San Lorenzo',
       password: 'password123',
-      profilePicture: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80',
+      profilePicture: 'assets/2.jpg',
       dateRegistered: '2023-01-10',
     },
     {
@@ -317,7 +317,7 @@ export const INITIAL_DEMO_DATA: DemoDatabase = {
       municipality: 'San Nicolas',
       Baranggay: 'Brgy. 2 San Baltazar',
       password: 'password123',
-      profilePicture: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
+      profilePicture: 'assets/1.jpg',
       dateRegistered: '2023-03-15',
     },
     // Admins
@@ -340,7 +340,7 @@ export const INITIAL_DEMO_DATA: DemoDatabase = {
       municipality: 'Laoag City',
       Baranggay: 'Brgy. 14 Santo Tomas',
       password: 'password123',
-      profilePicture: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80',
+      profilePicture: 'assets/5.jpg',
       dateRegistered: '2022-01-01',
     },
     {

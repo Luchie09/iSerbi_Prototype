@@ -123,7 +123,7 @@ export const ScholarDashboard: React.FC = () => {
       {/* Top Stat Cards (Section 7.1) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* Stat 1: Cumulative Hours (Prefix-Sum) */}
-        <div className="bg-white p-6 rounded-[22px] border border-slate-200 shadow-[0_10px_30px_rgba(15,23,42,0.04)] relative overflow-hidden">
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-[0_10px_30px_rgba(15,23,42,0.04)] relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
               Cumulative Hours

@@ -448,16 +448,6 @@ export const ScholarProfile: React.FC = () => {
               </div>
             </>
           )}
-
-          <div className="md:col-span-2 xl:col-span-4">
-            <span className="text-slate-400 block font-semibold text-[11px] uppercase tracking-wider mb-1">
-              Enrollment Date
-            </span>
-            <div className="flex items-center gap-2 text-slate-800 font-mono">
-              <Calendar className="w-4 h-4 text-slate-400" />
-              <span>{formatDateOnly(currentUser.dateRegistered)}</span>
-            </div>
-          </div>
         </div>
       </div>
 
